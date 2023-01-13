@@ -34,29 +34,29 @@ The script itself exposes some metrics which can be scraped at `/metrics`:
 ### Prometheus job
 `default` namespace, module and service names need to be updated to match your environment
 ```
-    - job_name: "blackbox-exporter-icmp-from-dns"
+- job_name: "blackbox-exporter-icmp-from-dns"
 
-      metrics_path: /probe
-      params:
-        module: [icmp]
+  metrics_path: /probe
+  params:
+    module: [icmp]
 
-      http_sd_configs:
-        - url: http://dns2promsd.default:5000/discover?zone=domain.local&nameserver=1.2.3.4
+  http_sd_configs:
+    - url: http://dns2promsd.default:5000/discover?zone=domain.local&nameserver=1.2.3.4
 
-      relabel_configs:
-        - source_labels: [__meta_record_name]
-          target_label: target
-          replacement: "${1}"
-        - source_labels: [__address__]
-          target_label: __param_target
-        - source_labels: [__param_target]
-          target_label: instance  
-        - source_labels: [__param_module]
-          target_label: target_module  
-        - action: labelmap
-          regex: __meta_record_(.+)
-          replacement: record_${1}
+  relabel_configs:
+    - source_labels: [__meta_record_name]
+      target_label: target
+      replacement: "${1}"
+    - source_labels: [__address__]
+      target_label: __param_target
+    - source_labels: [__param_target]
+      target_label: instance  
+    - source_labels: [__param_module]
+      target_label: target_module  
+    - action: labelmap
+      regex: __meta_record_(.+)
+      replacement: record_${1}
 
-        - target_label: __address__
-          replacement: blackbox-exporter.default:9115
+    - target_label: __address__
+      replacement: blackbox-exporter.default:9115
 ```
