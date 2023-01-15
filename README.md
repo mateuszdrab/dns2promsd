@@ -7,7 +7,7 @@ By default, A and TXT records are processed, where TXT records are joined up wit
 
 A sample TXT record would contain: `labelname=labelvalue`
 
-This is a solution which can be used establish a mechanism to override alert severity on per record basis. This is achieved by relabelling the `__meta_record_txt_blackbox_severity` record to `alert_severity` and then appropriately templating the severity label in the blackbox rule as below:
+This is a solution to establish a mechanism to override alert severity on per record basis. This is achieved by relabelling the `__meta_record_txt_blackbox_severity` record to `alert_severity` and then appropriately templating the severity label in the blackbox rule as below:
 ```
 labels:
   severity: >-
