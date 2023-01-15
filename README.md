@@ -1,7 +1,18 @@
 # dns2promsd
-Simple Flask based Python script to export DNS zones in Prometheus service discovery JSON format based through zone transfers
+Simple Flask based Python script to export DNS zones in Prometheus service discovery JSON format based through zone transfers.
 
 Created so that https://github.com/prometheus/blackbox_exporter can be used to discover resources to monitor by using DNS zone transfers.
+
+By default, A and TXT records are processed, where TXT records are joined up with `;` as a separator to create a single `__meta_record_txt` label composed of all TXT records under the same name. Additionally, each record is processed for key value pairs using the `=` value separator and successfully processed pairs are added as extra labels in the format of `__meta_record_txt_<labelname>`.
+
+A sample TXT record would contain: `labelname=labelvalue`
+
+This is a solution which can be used establish a mechanism to override alert severity on per record basis. This is achieved by relabelling the `__meta_record_txt_blackbox_severity` record to `alert_severity` and then appropriately templating the severity label in the blackbox rule as below:
+```
+labels:
+  severity: >-
+    {{ if $labels.alert_severity }}{{$labels.alert_severity}}{{else}}critical{{end}}
+```
 
 The URL takes the following parameters
 
@@ -53,6 +64,11 @@ The script itself exposes some metrics which can be scraped at `/metrics`:
       target_label: instance  
     - source_labels: [__param_module]
       target_label: target_module  
+    - source_labels: [__meta_record_txt_blackbox_severity]
+      target_label: alert_severity
+    - regex: __meta_record_txt(.*)
+      action: labeldrop          
+    - action: labelmap
     - action: labelmap
       regex: __meta_record_(.+)
       replacement: record_${1}
