@@ -53,33 +53,34 @@ def discover():
 
     for (name, ttl, rdata) in zone.iterate_rdatas(record_type):
         record_name = name.to_text().lower()
-        if record_name != "@":
-            txt_record_str = ""
-            txt_record_kv = {}
-            with suppress(KeyError):
-                txt_records = zone.find_rdataset(name, "TXT")
-                for txt_item in txt_records:
-                    for txt_str in txt_item.strings:
-                        decoded = txt_str.decode("utf-8")
-                        txt_record_str += decoded + ';'
-                        try:
-                            txt_record_kv.update(
-                                parse_kv_pairs(decoded, ';'))
-                        except:
-                            pass
-            record = {'labels':
-                      {
-                          '__meta_record_name': record_name,
-                          '__meta_record_type': record_type,
-                          '__meta_record_ttl': str(ttl),
-                      },
-                      'targets': [rdata.address]
-                      }
-            if txt_record_str:
-                record['labels']['__meta_record_txt'] = txt_record_str
-            record['labels'].update(prefix_key_dict(
-                "__meta_record_txt_", txt_record_kv))
-            records.append(record)
+        zone_name = zone.origin.to_text().lower().rstrip('.')
+        txt_record_str = ""
+        txt_record_kv = {}
+        with suppress(KeyError):
+            txt_records = zone.find_rdataset(name, "TXT")
+            for txt_item in txt_records:
+                for txt_str in txt_item.strings:
+                    decoded = txt_str.decode("utf-8")
+                    txt_record_str += decoded + ';'
+                    try:
+                        txt_record_kv.update(
+                            parse_kv_pairs(decoded, ';'))
+                    except:
+                        pass
+        record = {'labels':
+                  {
+                      '__meta_record_name': record_name,
+                      '__meta_record_type': record_type,
+                      '__meta_record_zone': zone_name,
+                      '__meta_record_ttl': str(ttl),
+                  },
+                  'targets': [rdata.address]
+                  }
+        if txt_record_str:
+            record['labels']['__meta_record_txt'] = txt_record_str
+        record['labels'].update(prefix_key_dict(
+            "__meta_record_txt_", txt_record_kv))
+        records.append(record)
 
     return jsonify(records)
 
