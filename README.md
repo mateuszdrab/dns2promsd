@@ -16,7 +16,7 @@ labels:
 
 The URL takes the following parameters
 
-- `zone`
+- `zone` (multiple can be supplied, separated with a `;`)
 - `nameserver`
 - `type` optional (default "A")
 

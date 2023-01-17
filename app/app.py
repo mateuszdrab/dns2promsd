@@ -42,45 +42,48 @@ def prefix_key_dict(prefix, test_dict):
 def discover():
     requests_metric.labels(path=DISCOVER_PATH).inc()
 
-    req_zone = request.args.get('zone')
+    req_zones = request.args.get('zone').split(';')
     req_nameserver = request.args.get('nameserver')
     record_type = request.args.get('type', 'A')
 
     records = []
-    zone = dns.zone.from_xfr(dns.query.xfr(
-        req_nameserver, req_zone))
-    zonetransfer_metric.labels(zone=req_zone, nameserver=req_nameserver).inc()
 
-    for (name, ttl, rdata) in zone.iterate_rdatas(record_type):
-        record_name = name.to_text().lower()
-        zone_name = zone.origin.to_text().lower().rstrip('.')
-        txt_record_str = ""
-        txt_record_kv = {}
-        with suppress(KeyError):
-            txt_records = zone.find_rdataset(name, "TXT")
-            for txt_item in txt_records:
-                for txt_str in txt_item.strings:
-                    decoded = txt_str.decode("utf-8")
-                    txt_record_str += decoded + ';'
-                    try:
-                        txt_record_kv.update(
-                            parse_kv_pairs(decoded, ';'))
-                    except:
-                        pass
-        record = {'labels':
-                  {
-                      '__meta_record_name': record_name,
-                      '__meta_record_type': record_type,
-                      '__meta_record_zone': zone_name,
-                      '__meta_record_ttl': str(ttl),
-                  },
-                  'targets': [rdata.address]
-                  }
-        if txt_record_str:
-            record['labels']['__meta_record_txt'] = txt_record_str
-        record['labels'].update(prefix_key_dict(
-            "__meta_record_txt_", txt_record_kv))
-        records.append(record)
+    for req_zone in req_zones:
+        zone = dns.zone.from_xfr(dns.query.xfr(
+            req_nameserver, req_zone))
+        zonetransfer_metric.labels(
+            zone=req_zone, nameserver=req_nameserver).inc()
+
+        for (name, ttl, rdata) in zone.iterate_rdatas(record_type):
+            record_name = name.to_text().lower()
+            zone_name = zone.origin.to_text().lower().rstrip('.')
+            txt_record_str = ""
+            txt_record_kv = {}
+            with suppress(KeyError):
+                txt_records = zone.find_rdataset(name, "TXT")
+                for txt_item in txt_records:
+                    for txt_str in txt_item.strings:
+                        decoded = txt_str.decode("utf-8")
+                        txt_record_str += decoded + ';'
+                        try:
+                            txt_record_kv.update(
+                                parse_kv_pairs(decoded, ';'))
+                        except:
+                            pass
+            record = {'labels':
+                      {
+                          '__meta_record_name': record_name,
+                          '__meta_record_type': record_type,
+                          '__meta_record_zone': zone_name,
+                          '__meta_record_ttl': str(ttl),
+                      },
+                      'targets': [rdata.address]
+                      }
+            if txt_record_str:
+                record['labels']['__meta_record_txt'] = txt_record_str
+            record['labels'].update(prefix_key_dict(
+                "__meta_record_txt_", txt_record_kv))
+            records.append(record)
 
     return jsonify(records)
 
