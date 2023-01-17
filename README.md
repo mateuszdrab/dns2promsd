@@ -69,7 +69,6 @@ The script itself exposes some metrics which can be scraped at `/metrics`:
     - regex: __meta_record_txt(.*)
       action: labeldrop          
     - action: labelmap
-    - action: labelmap
       regex: __meta_record_(.+)
       replacement: record_${1}
 
