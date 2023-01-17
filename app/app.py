@@ -52,7 +52,7 @@ def discover():
     zonetransfer_metric.labels(zone=req_zone, nameserver=req_nameserver).inc()
 
     for (name, ttl, rdata) in zone.iterate_rdatas(record_type):
-        record_name = name.to_text()
+        record_name = name.to_text().lower()
         if record_name != "@":
             txt_record_str = ""
             txt_record_kv = {}
