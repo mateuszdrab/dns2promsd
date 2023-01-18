@@ -1,20 +1,17 @@
 from shlex import shlex
 from flask import Flask, jsonify, request
 from prometheus_client import Counter, generate_latest
+from prometheus_flask_exporter import PrometheusMetrics
 import dns.query
 import dns.zone
 import dns.ipv4
 from contextlib import suppress
 
-requests_metric = Counter('dns2promsd_requests_total',
-                          'Requests received by dns2promsd', ['path'])
 zonetransfer_metric = Counter('dns2promsd_zone_transfers_total',
                               'Zone transfers carried out by dns2promsd', ['zone', 'nameserver'])
 
 app = Flask(__name__)
-
-
-DISCOVER_PATH = '/discover'
+metrics = PrometheusMetrics(app)
 
 
 def parse_kv_pairs(text, item_sep=",", value_sep="="):
@@ -38,10 +35,10 @@ def prefix_key_dict(prefix, test_dict):
     return res
 
 
-@app.route(DISCOVER_PATH)
+@app.route('/discover')
+@metrics.counter('dns2promsd_requests_total', 'Requests received by dns2promsd',
+                 labels={'path': lambda: request.path}, initial_value_when_only_static_labels=False)
 def discover():
-    requests_metric.labels(path=DISCOVER_PATH).inc()
-
     req_zones = request.args.get('zone').split(';')
     req_nameserver = request.args.get('nameserver')
     record_type = request.args.get('type', 'A')
@@ -86,11 +83,6 @@ def discover():
             records.append(record)
 
     return jsonify(records)
-
-
-@app.route('/metrics')
-def metrics():
-    return generate_latest()
 
 
 if __name__ == '__main__':
